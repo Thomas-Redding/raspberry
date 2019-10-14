@@ -4,15 +4,8 @@ package main
 /*
 
 # Functions to implement
-func bucketRoot(isLocalHost) string {
-  if isLocalHost {
-    pwd, err := os.Getwd()
-    if err != nil { return "" }
-    return pwd + "/data/default"
-  } else {
-    // Production
-    return "some-bucket-name.appspot.com:default"
-  }
+func bucketRoot() string {
+  return "/Users/John/files/to/serve"
 }
 func start() {}
 
@@ -73,7 +66,7 @@ func __System_healthHandler(writer http.ResponseWriter, request *http.Request) {
 /********** Files **********/
 
 func __System_handle(writer http.ResponseWriter, request *http.Request) {
-  files := &Files{_rootDir: bucketRoot(true)}
+  files := &Files{_rootDir: bucketRoot()}
   system := &System{_writer: writer, files: files}
   handle(writer, request, system)
 }
