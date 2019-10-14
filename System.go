@@ -4,8 +4,16 @@ package main
 /*
 
 # Functions to implement
-func subdomainName() string { return "foo" }
-func bucketName() string { return "some-bucket-name.appspot.com" }
+func bucketRoot(isLocalHost) string {
+  if isLocalHost {
+    pwd, err := os.Getwd()
+    if err != nil { return "" }
+    return pwd + "/data/default"
+  } else {
+    // Production
+    return "some-bucket-name.appspot.com:default"
+  }
+}
 func start() {}
 
 class System:
@@ -87,17 +95,17 @@ func __System_handle(writer http.ResponseWriter, request *http.Request) {
       return
     }
     defer client.Close()
-    bucketHandle := client.Bucket(bucketName())
-    rootDir := subdomainName()
+    bucketPwd := bucketRoot(false)
+    i := strings.Index(bucketPwd, ":")
+    bucketName := bucketPwd[0:i]
+    bucketRootDir := bucketPwd[i+1:]
+    bucketHandle := client.Bucket(bucketName)
     files = &Files{_ctx: ctx, _client: client, _bucketHandle: bucketHandle,
-        _rootDir: rootDir, _isLocalHost: false}
+        _rootDir: bucketRootDir, _isLocalHost: false}
   } else if strings.HasPrefix(pwd, "/Users") {
     // Running in localhost
-    pwdParts := strings.Split(pwd, "/")
-    pathToProjectRoot := strings.Join(pwdParts[:len(pwdParts)-1], "/")
-    rootDir := pathToProjectRoot + "/data/" + subdomainName()
     files = &Files{_ctx: nil, _client: nil, _bucketHandle: nil,
-        _rootDir: rootDir, _isLocalHost: true}
+        _rootDir: bucketRoot(true), _isLocalHost: true}
   } else {
     writer.WriteHeader(500)
     writer.Write([]byte("Error 500: Not running in production or localhost: \"" + pwd + "\"."))
@@ -151,7 +159,6 @@ func (files *Files) Read(key string) ([]byte, error) {
 }
 
 func (files *Files) Exists(key string) bool {
-  if key == "/" { return false }
   key = files.__System_CorrectFilePath(key)
   if files._isLocalHost {
     info, err := os.Stat(key);
