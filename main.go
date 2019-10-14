@@ -9,6 +9,7 @@ import (
 func bucketRoot(isLocalHost bool) string {
 	if isLocalHost {
 		pwd, err := os.Getwd()
+		log.Printf("PWD=%s", pwd)
 		if err != nil {
 			log.Printf("Error in bucketPath(): %v", err)
 			return ""
