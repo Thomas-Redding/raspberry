@@ -14,7 +14,7 @@ import (
 
 var ROOT_PATH string
 
-var STYLE_STRING = `
+var WEB_STRING = `
 <style>
 body {
 	background-color: #222;
@@ -26,6 +26,11 @@ a {
 }
 
 </style>
+<script>
+var xhttp = new XMLHttpRequest();
+xhttp.open("POST", "_warm", true);
+xhttp.send();
+</script>
 `
 
 func main() {
@@ -39,9 +44,9 @@ func handle(writer http.ResponseWriter, request *http.Request) {
 		fakeFilePath := randomString(8)
 		_, err := os.Open(fakeFilePath)
 		SendError(writer, 200, "Warmed up disk with %s : %v", fakeFilePath, err)
+		return
 	}
 	path := ROOT_PATH + request.URL.Path
-	log.Printf("handle(\"%s\")", path)
 	file, err := os.Open(path)
 	if err != nil {
 	  SendError(writer, 404, "File Not Found [a]")
@@ -89,7 +94,7 @@ func handle(writer http.ResponseWriter, request *http.Request) {
 		writer.Write([]byte(childName))
 		writer.Write([]byte("</a><br/>"))
 	}
-	writer.Write([]byte(STYLE_STRING))
+	writer.Write([]byte(WEB_STRING))
 }
 
 func SendError(writer http.ResponseWriter, errorCode int, format string, args ...interface{}) {
@@ -97,7 +102,7 @@ func SendError(writer http.ResponseWriter, errorCode int, format string, args ..
   writer.Header().Set("Content-type", "text/html")
   writer.WriteHeader(errorCode)
   writer.Write([]byte(errorMessage))
-  writer.Write([]byte(STYLE_STRING))
+  writer.Write([]byte(WEB_STRING))
   log.Printf(errorMessage)
 }
 
