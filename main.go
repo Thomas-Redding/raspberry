@@ -6,8 +6,10 @@ import (
 	"log"
   "net/http"
   "os"
+  "math/rand"
   "strings"
   "strconv"
+  "time"
 )
 
 var ROOT_PATH string
@@ -33,6 +35,11 @@ func main() {
 }
 
 func handle(writer http.ResponseWriter, request *http.Request) {
+	if request.URL.Path == "/_warm" {
+		fakeFilePath := randomString(8)
+		_, err := os.Open(fakeFilePath)
+		SendError(writer, 200, "Warmed up disk with %s : %v", fakeFilePath, err)
+	}
 	path := ROOT_PATH + request.URL.Path
 	log.Printf("handle(\"%s\")", path)
 	file, err := os.Open(path)
@@ -94,3 +101,13 @@ func SendError(writer http.ResponseWriter, errorCode int, format string, args ..
   log.Printf(errorMessage)
 }
 
+func randomString(length int) string {
+  if length <= 0 { return "" }
+  rand.Seed(time.Now().UnixNano())
+  chars := []rune("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789")
+  var b strings.Builder
+  for i := 0; i < length; i++ {
+    b.WriteRune(chars[rand.Intn(len(chars))])
+  }
+  return b.String()
+}
