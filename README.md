@@ -30,6 +30,20 @@ Where `raspbian.img` should be the path to the image you downloaded at the begin
 4. Use the mouse to click through the dialogs.
 5. Restart the Raspberry Pi when prompted.
 
+### Enable SSH
+
+1. Navigate to Menu Bar > Navigate to Preferences > Raspberry Pi Configuration > Interfaces.
+2. Enable SSH.
+3. Click OK.
+
+To ssh, just run
+
+```bash
+ssh pi@10.0.0.241
+```
+
+[directions here [here](https://www.raspberrypi.org/documentation/remote-access/ssh/)]
+
 ## Server Setup
 
 ### Golang
@@ -52,14 +66,6 @@ You can use multiple files, but put them all in one directory - no subdirectorie
 ```bash
 go run *.go
 ```
-
-## Enable SSH
-
-1. Navigate to Menu Bar > Navigate to Preferences > Raspberry Pi Configuration > Interfaces.
-2. Enable SSH.
-3. Click OK.
-
-[directions here [here](https://www.raspberrypi.org/documentation/remote-access/ssh/)]
 
 ## Troubleshooting
 
