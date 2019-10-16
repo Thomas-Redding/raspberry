@@ -13,6 +13,7 @@ import (
 )
 
 var ROOT_PATH string
+var IS_PROGRAMMATIC bool
 
 var WEB_STRING = `
 <style>
@@ -35,6 +36,7 @@ xhttp.send();
 
 func main() {
   ROOT_PATH = os.Args[1]
+  IS_PROGRAMMATIC = (len(os.Args) == 2)
   http.HandleFunc("/", handle)
   log.Printf("FATAL ERROR: %v", http.ListenAndServe(":8080", nil))
 }
@@ -77,25 +79,46 @@ func handle(writer http.ResponseWriter, request *http.Request) {
     SendError(writer, 500, "Internal Server Error [c]")
     return
   }
-  writer.Header().Set("Content-type", "text/html")
-  for _, child := range children {
-    childName := child.Name()
-    if strings.HasPrefix(childName, ".") { continue }
 
-    file, err := os.Open(path + childName)
-    if err != nil { continue }
-    fileInfo, err = file.Stat();
-    if err != nil { continue }
-    isFile := !fileInfo.Mode().IsDir()
-    if isFile {
-      writer.Write([]byte("<a href=\"" + childName + "\">"))
-    } else {
-      writer.Write([]byte("<a href=\"" + childName + "/\">"))
+  if IS_PROGRAMMATIC {
+    writer.Header().Set("Content-type", "text/plain")
+    writer.WriteHeader(200)
+    for _, child := range children {
+      childName := child.Name()
+      if strings.HasPrefix(childName, ".") { continue }
+      file, err := os.Open(path + childName)
+      if err != nil { continue }
+      fileInfo, err = file.Stat();
+      if err != nil { continue }
+      isFile := !fileInfo.Mode().IsDir()
+      if isFile {
+        writer.Write([]byte(childName + "/\n"))
+      } else {
+        writer.Write([]byte(childName + "/\n"))
+      }
     }
-    writer.Write([]byte(childName))
-    writer.Write([]byte("</a><br/>"))
+  } else {
+    writer.Header().Set("Content-type", "text/html")
+    writer.WriteHeader(200)
+    for _, child := range children {
+      childName := child.Name()
+      if strings.HasPrefix(childName, ".") { continue }
+
+      file, err := os.Open(path + childName)
+      if err != nil { continue }
+      fileInfo, err = file.Stat();
+      if err != nil { continue }
+      isFile := !fileInfo.Mode().IsDir()
+      if isFile {
+        writer.Write([]byte("<a href=\"" + childName + "\">"))
+      } else {
+        writer.Write([]byte("<a href=\"" + childName + "/\">"))
+      }
+      writer.Write([]byte(childName))
+      writer.Write([]byte("</a><br/>"))
+    }
+    writer.Write([]byte(WEB_STRING))
   }
-  writer.Write([]byte(WEB_STRING))
 }
 
 func SendError(writer http.ResponseWriter, errorCode int, format string, args ...interface{}) {

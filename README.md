@@ -57,14 +57,34 @@ vi ~/.profile
 # add "export PATH=$PATH:/usr/local/go/bin"
 ```
 
-Finally, restart your computer.
+Finally, restart your computer (restarting you command line might be enough).
 
-Next, you need to write your Go code. Alternative, git clone this repo:
+### Repo
 
-You can use multiple files, but put them all in one directory - no subdirectories. To run the server, just use
+Git clone this repo and cd into it. For a programatic interface, run
 
 ```bash
-go run *.go
+go run *.go /path/to/fileserving/root
+```
+
+For a basic (dark) UI run
+
+```bash
+go run *.go /path/to/file/serving/root x
+```
+
+### Cronjob
+
+Set up a cronjob by running
+
+```bash
+crontab -e
+```
+
+and add
+
+```
+@reboot go run /path/to/gitrepo/main.go /path/to/file/serving/root
 ```
 
 ## Troubleshooting
