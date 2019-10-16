@@ -53,6 +53,14 @@ You can use multiple files, but put them all in one directory - no subdirectorie
 go run *.go
 ```
 
+## Enable SSH
+
+1. Navigate to Menu Bar > Navigate to Preferences > Raspberry Pi Configuration > Interfaces.
+2. Enable SSH.
+3. Click OK.
+
+[directions here [here](https://www.raspberrypi.org/documentation/remote-access/ssh/)]
+
 ## Troubleshooting
 
 ### Lights
