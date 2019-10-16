@@ -43,7 +43,8 @@ func handle(writer http.ResponseWriter, request *http.Request) {
   if request.URL.Path == "/_warm" {
     fakeFilePath := randomString(8)
     _, err := os.Open(fakeFilePath)
-    SendError(writer, 200, "Warmed up disk with %s : %v", fakeFilePath, err)
+    writer.WriteHeader(200)
+    writer.Write([]byte(fmt.Sprintf("Warmed up disk with %s : %v", fakeFilePath, err)))
     return
   }
   path := ROOT_PATH + request.URL.Path
