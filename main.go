@@ -1,9 +1,9 @@
 package main
 
 import (
-	"fmt"
-	"io/ioutil"
-	"log"
+  "fmt"
+  "io/ioutil"
+  "log"
   "net/http"
   "os"
   "math/rand"
@@ -17,12 +17,12 @@ var ROOT_PATH string
 var WEB_STRING = `
 <style>
 body {
-	background-color: #222;
-	color: white;
+  background-color: #222;
+  color: white;
 }
 
 a {
-	color: rgb(255, 221, 27);
+  color: rgb(255, 221, 27);
 }
 
 </style>
@@ -34,67 +34,67 @@ xhttp.send();
 `
 
 func main() {
-	ROOT_PATH = os.Args[1]
+  ROOT_PATH = os.Args[1]
   http.HandleFunc("/", handle)
   log.Printf("FATAL ERROR: %v", http.ListenAndServe(":8080", nil))
 }
 
 func handle(writer http.ResponseWriter, request *http.Request) {
-	if request.URL.Path == "/_warm" {
-		fakeFilePath := randomString(8)
-		_, err := os.Open(fakeFilePath)
-		SendError(writer, 200, "Warmed up disk with %s : %v", fakeFilePath, err)
-		return
-	}
-	path := ROOT_PATH + request.URL.Path
-	file, err := os.Open(path)
-	if err != nil {
-	  SendError(writer, 404, "File Not Found [a]")
-	  return
-	}
-	defer file.Close()
+  if request.URL.Path == "/_warm" {
+    fakeFilePath := randomString(8)
+    _, err := os.Open(fakeFilePath)
+    SendError(writer, 200, "Warmed up disk with %s : %v", fakeFilePath, err)
+    return
+  }
+  path := ROOT_PATH + request.URL.Path
+  file, err := os.Open(path)
+  if err != nil {
+    SendError(writer, 404, "File Not Found [a]")
+    return
+  }
+  defer file.Close()
 
-	fileInfo, err := file.Stat();
-	if err != nil {
-		SendError(writer, 500, "Internal Server Error [b]")
-		return
-	}
+  fileInfo, err := file.Stat();
+  if err != nil {
+    SendError(writer, 500, "Internal Server Error [b]")
+    return
+  }
 
-	isFile := !fileInfo.Mode().IsDir()
-	if isFile {
-		http.ServeFile(writer, request, path)
-		return
-	}
+  isFile := !fileInfo.Mode().IsDir()
+  if isFile {
+    http.ServeFile(writer, request, path)
+    return
+  }
 
-	// The path is a directory.
-	if !strings.HasSuffix(path, "/") {
-		http.Redirect(writer, request, request.URL.Path + "/", http.StatusSeeOther)
-		return
-	}
+  // The path is a directory.
+  if !strings.HasSuffix(path, "/") {
+    http.Redirect(writer, request, request.URL.Path + "/", http.StatusSeeOther)
+    return
+  }
   children, err := ioutil.ReadDir(path)
   if err != nil {
-  	SendError(writer, 500, "Internal Server Error [c]")
-		return
+    SendError(writer, 500, "Internal Server Error [c]")
+    return
   }
   writer.Header().Set("Content-type", "text/html")
   for _, child := range children {
-  	childName := child.Name()
-	  if strings.HasPrefix(childName, ".") { continue }
+    childName := child.Name()
+    if strings.HasPrefix(childName, ".") { continue }
 
-	  file, err := os.Open(path + childName)
-	  if err != nil { continue }
-	  fileInfo, err = file.Stat();
-		if err != nil { continue }
-		isFile := !fileInfo.Mode().IsDir()
-	  if isFile {
-		  writer.Write([]byte("<a href=\"" + childName + "\">"))
-		} else {
-			writer.Write([]byte("<a href=\"" + childName + "/\">"))
-		}
-		writer.Write([]byte(childName))
-		writer.Write([]byte("</a><br/>"))
-	}
-	writer.Write([]byte(WEB_STRING))
+    file, err := os.Open(path + childName)
+    if err != nil { continue }
+    fileInfo, err = file.Stat();
+    if err != nil { continue }
+    isFile := !fileInfo.Mode().IsDir()
+    if isFile {
+      writer.Write([]byte("<a href=\"" + childName + "\">"))
+    } else {
+      writer.Write([]byte("<a href=\"" + childName + "/\">"))
+    }
+    writer.Write([]byte(childName))
+    writer.Write([]byte("</a><br/>"))
+  }
+  writer.Write([]byte(WEB_STRING))
 }
 
 func SendError(writer http.ResponseWriter, errorCode int, format string, args ...interface{}) {
