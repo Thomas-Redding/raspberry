@@ -13,7 +13,11 @@ import (
 )
 
 var ROOT_PATH string
-var IS_PROGRAMMATIC bool
+var IS_UI bool
+var IS_HD bool
+
+// FILE_INDEX["/foo/bar"] = ["baz", "qux"]
+var FILE_INDEX map[string][]string
 
 var WEB_STRING = `
 <style>
@@ -27,29 +31,103 @@ a {
 }
 
 </style>
-<script>
-var xhttp = new XMLHttpRequest();
-xhttp.open("POST", "_warm", true);
-xhttp.send();
-</script>
 `
 
+/*
+ go run main.go /path/to/file -hd -ui
+ */
 func main() {
-  ROOT_PATH = os.Args[1]
-  IS_PROGRAMMATIC = (len(os.Args) == 2)
+  IS_UI = false
+  IS_HD = false
+  ROOT_PATH = ""
+  for i, arg := range(os.Args) {
+    if i == 0 { continue }
+    if arg[0] != '-' {
+      if ROOT_PATH == "" {
+        ROOT_PATH = arg
+      } else {
+        os.Exit(1)
+      }
+      continue
+    } else {
+      flag := arg[1:]
+      if flag == "hd" {
+        IS_HD = true
+      } else if flag == "ui" {
+        IS_UI = true
+      } else {
+        log.Printf("Unrecognized flag.\n")
+        os.Exit(1)
+      }
+    }
+  }
+  if ROOT_PATH == "" {
+    log.Printf("No file path provided.\n")
+    os.Exit(1)
+  }
+  if ROOT_PATH[0] != '/' {
+    log.Printf("File path must be absolute.\n")
+    os.Exit(1)
+  }
+
+  if IS_HD {
+    log.Printf("Building an index...")
+    FILE_INDEX = make(map[string][]string)
+    q := make(map[string]bool)
+    nextQ := make(map[string]bool)
+    nextQ[ROOT_PATH] = true
+    for {
+      if len(nextQ) == 0 { break }
+      q = nextQ
+      nextQ = make(map[string]bool)
+      for path, ok := range q {
+        if !ok { break }
+        FILE_INDEX[path] = []string{}
+        children, err := ioutil.ReadDir(path)
+        if err != nil { continue }
+        for _, child := range children {
+          childName := child.Name()
+          if strings.HasPrefix(childName, ".") { continue }
+          FILE_INDEX[path] = append(FILE_INDEX[path], childName)
+          file, err := os.Open(path + "/" + childName)
+          if err != nil { continue }
+          fileInfo, err := file.Stat();
+          if err != nil { continue }
+          if fileInfo.Mode().IsDir() {
+            nextQ[path + "/" + childName] = true
+          }
+          file.Close()
+        }
+      }
+    }
+  }
+  log.Printf("Serving at http://localhost:8080/...")
   http.HandleFunc("/", handle)
   log.Printf("FATAL ERROR: %v", http.ListenAndServe(":8080", nil))
 }
 
-func handle(writer http.ResponseWriter, request *http.Request) {
-  if request.URL.Path == "/_warm" {
-    fakeFilePath := randomString(8)
-    _, err := os.Open(fakeFilePath)
-    writer.WriteHeader(200)
-    writer.Write([]byte(fmt.Sprintf("Warmed up disk with %s : %v", fakeFilePath, err)))
-    return
+func childrenOfDir(path string) []string {
+  if IS_HD {
+    go func() {
+      fakeFilePath := randomString(8)
+      os.Open(fakeFilePath)
+    }()
+    if strings.HasSuffix(path, "/") { path = path[:len(path)-1] }
+    return FILE_INDEX[path]
+  } else {
+    files, err := ioutil.ReadDir(path)
+    if err != nil { return nil }
+    rtn := []string{}
+    for _, file := range files {
+      rtn = append(rtn, file.Name())
+    }
+    return rtn
   }
+}
+
+func handle(writer http.ResponseWriter, request *http.Request) {
   path := ROOT_PATH + request.URL.Path
+  log.Printf("handle %s", path)
   file, err := os.Open(path)
   if err != nil {
     SendError(writer, 404, "File Not Found [a]")
@@ -74,50 +152,29 @@ func handle(writer http.ResponseWriter, request *http.Request) {
     http.Redirect(writer, request, request.URL.Path + "/", http.StatusSeeOther)
     return
   }
-  children, err := ioutil.ReadDir(path)
+  children := childrenOfDir(path)
   if err != nil {
     SendError(writer, 500, "Internal Server Error [c]")
     return
   }
 
-  if IS_PROGRAMMATIC {
-    writer.Header().Set("Content-type", "text/plain")
-    writer.WriteHeader(200)
-    for _, child := range children {
-      childName := child.Name()
-      if strings.HasPrefix(childName, ".") { continue }
-      file, err := os.Open(path + childName)
-      if err != nil { continue }
-      fileInfo, err = file.Stat();
-      if err != nil { continue }
-      isFile := !fileInfo.Mode().IsDir()
-      if isFile {
-        writer.Write([]byte(childName + "/\n"))
-      } else {
-        writer.Write([]byte(childName + "/\n"))
-      }
-    }
-  } else {
+  if IS_UI {
     writer.Header().Set("Content-type", "text/html")
     writer.WriteHeader(200)
-    for _, child := range children {
-      childName := child.Name()
+    for _, childName := range children {
       if strings.HasPrefix(childName, ".") { continue }
-
-      file, err := os.Open(path + childName)
-      if err != nil { continue }
-      fileInfo, err = file.Stat();
-      if err != nil { continue }
-      isFile := !fileInfo.Mode().IsDir()
-      if isFile {
-        writer.Write([]byte("<a href=\"" + childName + "\">"))
-      } else {
-        writer.Write([]byte("<a href=\"" + childName + "/\">"))
-      }
+      writer.Write([]byte("<a href=\"" + childName + "\">"))
       writer.Write([]byte(childName))
       writer.Write([]byte("</a><br/>"))
     }
     writer.Write([]byte(WEB_STRING))
+  } else {
+    writer.Header().Set("Content-type", "text/plain")
+    writer.WriteHeader(200)
+    for _, childName := range children {
+      if strings.HasPrefix(childName, ".") { continue }
+      writer.Write([]byte(childName + "\n"))
+    }
   }
 }
 
