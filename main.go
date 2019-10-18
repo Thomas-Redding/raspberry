@@ -71,6 +71,8 @@ func main() {
   }
 
   if IS_HD {
+    log.Printf("Sleeping for 60 seconds...")
+    time.Sleep(60 * time.Second)
     log.Printf("Building an index...")
     FILE_INDEX = make(map[string][]string)
     q := make(map[string]bool)
