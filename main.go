@@ -16,6 +16,7 @@ import (
 var ROOT_PATH string
 var IS_UI bool
 var IS_HD bool
+var SHOULD_SLEEP bool
 
 // FILE_INDEX["/foo/bar"] = ["baz", "qux"]
 var FILE_INDEX map[string][]string
@@ -203,11 +204,12 @@ func reconstructIndex(rootPath string) {
 }
 
 /*
- go run main.go /path/to/file -hd -ui
+ go run main.go /path/to/file -hd -ui -sleep
  */
 func main() {
   IS_HD = false
   IS_UI = false
+  SHOULD_SLEEP = false
   ROOT_PATH = ""
   for i, arg := range(os.Args) {
     if i == 0 { continue }
@@ -224,6 +226,8 @@ func main() {
         IS_HD = true
       } else if flag == "ui" {
         IS_UI = true
+      } else if flag == "sleep" {
+        SHOULD_SLEEP = true
       } else {
         log.Printf("Unrecognized flag.\n")
         os.Exit(1)
@@ -240,8 +244,10 @@ func main() {
   }
 
   if IS_HD {
-    log.Printf("Sleeping for 60 seconds...")
-    time.Sleep(60 * time.Second)
+    if SHOULD_SLEEP {
+    	log.Printf("Sleeping for 60 seconds...")
+    	time.Sleep(60 * time.Second)
+    }
     log.Printf("Building an index...")
     reconstructIndex(ROOT_PATH)
   }
