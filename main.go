@@ -250,12 +250,16 @@ func main() {
   log.Printf("FATAL ERROR: %v", http.ListenAndServe(":8080", nil))
 }
 
+func warmUpDisk() {
+	go func() {
+    fakeFilePath := randomString(8)
+    os.Open(fakeFilePath)
+  }()
+}
+
 func childrenOfDir(path string) []string {
   if IS_HD {
-    go func() {
-      fakeFilePath := randomString(8)
-      os.Open(fakeFilePath)
-    }()
+  	warmUpDisk()
     if strings.HasSuffix(path, "/") { path = path[:len(path)-1] }
     return FILE_INDEX[path]
   } else {
@@ -271,11 +275,11 @@ func childrenOfDir(path string) []string {
 
 func handle(writer http.ResponseWriter, request *http.Request) {
 	requestPath := request.URL.Path
-	log.Printf("handle(\"%s\")", requestPath)
 	if IS_UI {
 		if strings.HasPrefix(requestPath, "/@/") {
 			requestPath = requestPath[2:]
 		} else {
+			warmUpDisk()
 			writer.Header().Set("Content-type", "text/html")
 			indexHTML := strings.Replace(INDEX_HTML, "<JSON_INDEX_DATA>", INDEX_STRING, -1)
 			writer.WriteHeader(200)
