@@ -1,5 +1,13 @@
 package main
 
+/*
+ go run main.go /path/to/file -hd -ui -sleep
+
+ ui = builds an index; provide dark, column-based GUI
+ hd = warm up hard drive on all requests (only useful when `-ui` is being used)
+ sleep = sleep for 60 seconds before serving
+ */
+
 import (
   "fmt"
   "io/ioutil"
@@ -261,9 +269,6 @@ func reconstructIndex(rootPath string) {
   INDEX_STRING = string(slurp)
 }
 
-/*
- go run main.go /path/to/file -hd -ui -sleep
- */
 func main() {
   IS_HD = false
   IS_UI = false
@@ -301,7 +306,7 @@ func main() {
     os.Exit(1)
   }
 
-  if IS_HD {
+  if IS_UI {
     if SHOULD_SLEEP {
     	log.Printf("Sleeping for 60 seconds...")
     	time.Sleep(60 * time.Second)
@@ -324,6 +329,8 @@ func warmUpDisk() {
 func childrenOfDir(path string) []string {
   if IS_HD {
   	warmUpDisk()
+  }
+  if IS_UI {
     if strings.HasSuffix(path, "/") { path = path[:len(path)-1] }
     return FILE_INDEX[path]
   } else {
