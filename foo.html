@@ -6,12 +6,20 @@
 html, body {
   width: 100%;
   height: 100%;
+  overflow: hidden;
   background-color: #222;
   color: white;
+  padding: 0;
+  margin: 0;
+}
+
+#bodyDiv {
   display: flex;
   flex-direction: column;
   padding: 0;
   margin: 0;
+  width: 100%;
+  height: 100%;
 }
 
 a {
@@ -28,12 +36,13 @@ a {
 }
 
 #topBarDiv {
-  padding: 0.4em;
+  padding: 0.2em;
 }
 
 #leftBarDiv {
   border-right: solid white 1px;
-  padding: 0.4em;
+  min-width: 96px;
+  padding: 0.2em;
 }
 
 #mainVideo {
@@ -43,8 +52,7 @@ a {
 }
 
 #videoDiv {
-  max-width: 99%;
-  max-height: 99%;
+  flex: 1;
   position: relative;
 }
 
@@ -52,6 +60,28 @@ a {
 <script>
 
 const FILE_INDEX = <JSON_INDEX_DATA>;
+
+window.onresize = () => {
+  let pad = 0;
+  let rect = bodyDiv.getBoundingClientRect();
+  let trect = topBarDiv.getBoundingClientRect();
+  rect.width -= pad;
+  rect.height -= pad + trect.height;
+  let r = mainVideo.videoWidth / mainVideo.videoHeight;
+  if (rect.width / rect.height > r) {
+    let h = rect.height;
+    mainVideo.style.height = Math.floor(h) + 'px';
+    mainVideo.style.width = Math.floor(h * r) + 'px';
+  } else {
+    let w = rect.width;
+    mainVideo.style.width = Math.floor(w) + 'px';
+    mainVideo.style.height = Math.floor(w / r) + 'px';
+  }
+  console.log(mainVideo.videoWidth);
+  //mainVideo.style.width = rect.width + 'px';
+  //mainVideo.style.height = rect.height + 'px';
+  //console.log(mainVideo);
+}
 
 Array.prototype.back = function() {
   return this[this.length - 1];
@@ -78,10 +108,11 @@ function onlinkclick(abspath, time) {
   if (abspath.endsWith('.mp4')) {
     mainVideo.src = '@/' + abspath;
     if (time !== undefined) {
-      mainVideo.oncanplay = () => {
-        mainVideo.oncanplay = null;
+      let fn = () => {
         mainVideo.currentTime = time;
-      }
+        mainVideo.removeEventListener('canplay', fn);
+      };
+      mainVideo.addEventListener('canplay', fn);
     }
   }
 
@@ -131,6 +162,11 @@ function url2json(url) {
 }
 
 window.onload = () => {
+  console.log('onload');
+  mainVideo.addEventListener('canplay', () => {
+    window.onresize();
+  });
+
   let urlParams = url2json(window.location.href);
   let time = 0;
   if ('path' in urlParams) {
@@ -140,6 +176,7 @@ window.onload = () => {
     time = urlParams['time'];
   }
   onlinkclick(currentLocation.join('/'), time);
+  window.onresize();
 }
 
 function text2clipboard(txt) {
@@ -172,18 +209,20 @@ function embiggen() {
 </script>
 </head>
 <body>
-<div style='display:flex; flex-direction:row'>
-  <div>
-    <div id='topBarDiv' style='display:inline-block'></div>
-    <button onclick='link2clipboard(false)'>Copy Link</button>
-    <button onclick='link2clipboard(true)'>Copy Link @ Time</button>
-    <button onclick='embiggen()' id='embiggenButton'>Embiggen</button>
+<div id='bodyDiv'>
+  <div style='display:flex; flex-direction:row'>
+    <div>
+      <div id='topBarDiv' style='display:inline-block'></div>
+      <button onclick='link2clipboard(false)'>Copy Link</button>
+      <button onclick='link2clipboard(true)'>Copy Link @ Time</button>
+      <button onclick='embiggen()' id='embiggenButton'>Embiggen</button>
+    </div>
   </div>
-</div>
-<div id='container'>
-  <div id='leftBarDiv'></div>
-  <div id='videoDiv'>
-    <video id='mainVideo' controls autoplay></video>
+  <div id='container'>
+    <div id='leftBarDiv'></div>
+    <div id='videoDiv'>
+      <video id='mainVideo' controls autoplay></video>
+    </div>
   </div>
 </div>
 </body>
