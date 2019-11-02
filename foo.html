@@ -36,9 +36,17 @@ a {
   padding: 0.4em;
 }
 
-#videoDiv, #mainVideo {
-  max-width: 90%;
-  max-height: 90%;
+#mainVideo {
+  background-size: cover;
+  width: auto;
+  height: auto;
+  max-width: 99%;
+  max-height: 99%;
+}
+
+#videoDiv {
+  max-width: 99%;
+  max-height: 99%;
 }
 
 </style>
@@ -154,6 +162,14 @@ function link2clipboard(includeTime) {
   }
 }
 
+function embiggen() {
+  if (leftBarDiv.style.display != 'none') {
+    leftBarDiv.style.display = 'none';
+  } else {
+    leftBarDiv.style.display = 'block';
+  }
+}
+
 </script>
 </head>
 <body>
@@ -162,6 +178,7 @@ function link2clipboard(includeTime) {
     <div id='topBarDiv' style='display:inline-block'></div>
     <button onclick='link2clipboard(false)'>Copy Link</button>
     <button onclick='link2clipboard(true)'>Copy Link @ Time</button>
+    <button onclick='embiggen()' id='embiggenButton'>Embiggen</button>
   </div>
   <!--
   <div style='flex:1'></div>
