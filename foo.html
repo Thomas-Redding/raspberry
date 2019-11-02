@@ -64,6 +64,8 @@ a:hover {
 <script>
 
 const FILE_INDEX = <JSON_INDEX_DATA>;
+let currentLocation = ['videos']
+const kBadFormats = ['.avi', '.AVI', '.m4v', '.mkv', '.mht', '.mKV', '.wmv']
 
 window.onresize = () => {
   let pad = 0;
@@ -82,16 +84,11 @@ window.onresize = () => {
     mainVideo.style.height = Math.floor(w / r) + 'px';
   }
   console.log(mainVideo.videoWidth);
-  //mainVideo.style.width = rect.width + 'px';
-  //mainVideo.style.height = rect.height + 'px';
-  //console.log(mainVideo);
 }
 
 Array.prototype.back = function() {
   return this[this.length - 1];
 }
-
-let currentLocation = ['videos']
 
 function update_top_bar() {
   let url = '';
@@ -102,10 +99,7 @@ function update_top_bar() {
     url += '/';
     lines.push(line);
   }
-
   topBarDiv.innerHTML = lines.join(' / ');
-
-  //topBarDiv.innerHTML = currentLocation.map(x => '<a href="">' + x + '</a>').join('/');
 }
 
 function onlinkclick(abspath, time) {
@@ -119,13 +113,11 @@ function onlinkclick(abspath, time) {
       mainVideo.addEventListener('canplay', fn);
     }
   }
-
   currentLocation = abspath.split('/');
   update_top_bar();
   update_left_bar();
 }
 
-const kBadFormats = ['.avi', '.AVI', '.m4v', '.mkv', '.mht', '.mKV', '.wmv']
 
 function mp4s_at_dir(dir) {
   let files = FILE_INDEX[dir];
@@ -211,15 +203,19 @@ function text2clipboard(txt) {
   document.body.removeChild(a);
 }
 
-function link2clipboard(includeTime) {
-  // let path = encodeURIComponent(currentLocation.join('/'));
+function current_link(includeTime) {
   let path = mainVideo.src.split('/').slice(4).join('/');
   let time = mainVideo.currentTime;
+  let r = window.location.href.split('/')[2] + '/';
+  r += '?path=' + path;
   if (includeTime) {
-    text2clipboard('10.0.0.241:8080/?path=' + path +'&time=' + time);
-  } else {
-    text2clipboard('10.0.0.241:8080/?path=' + path);
+    r += '&time=' + time;
   }
+  return r;
+}
+
+function link2clipboard(includeTime) {
+  text2clipboard(current_link(includeTime));
 }
 
 function embiggen() {
@@ -239,6 +235,7 @@ function embiggen() {
       <button onclick='link2clipboard(false)'>Copy Link</button>
       <button onclick='link2clipboard(true)'>Copy Link @ Time</button>
       <button onclick='embiggen()' id='embiggenButton'>Embiggen</button>
+      <input type='checkbox' id='autoplayCheckbox'><label for='autoplayCheckbox'>Autoplay</label>
     </div>
   </div>
   <div id='container'>
