@@ -83,7 +83,6 @@ window.onresize = () => {
     mainVideo.style.width = Math.floor(w) + 'px';
     mainVideo.style.height = Math.floor(w / r) + 'px';
   }
-  console.log(mainVideo.videoWidth);
 }
 
 Array.prototype.back = function() {
@@ -177,7 +176,38 @@ function url2json(url) {
   return r;
 }
 
+Array.prototype.popBack = function() {
+  this.pop();
+  return this;
+}
+
+Array.prototype.pushBack = function(val) {
+  this.push(val);
+  return this;
+}
+
+function load_next_video() {
+  let currentLoc = mainVideo.src.split('/').slice(4).join('/');
+  currentLoc = decodeURIComponent(currentLoc);
+  let neighbors = mp4s_at_dir(currentLoc.split('/').popBack().join('/'));
+  let idx = neighbors.indexOf(currentLoc.split('/').pop());
+  if (idx != neighbors.length - 1) {
+    let next = currentLoc.split('/').popBack().pushBack(neighbors[idx + 1]).join('/');
+    onlinkclick(next);
+  }
+}
+
+function update() {
+  if (autoplayCheckbox.checked) {
+    if (mainVideo.currentTime / mainVideo.duration >= 0.999) {
+      load_next_video();
+    }
+  }
+}
+
+
 window.onload = () => {
+  setInterval(update, 200);
   mainVideo.addEventListener('canplay', () => {
     window.onresize();
   });
