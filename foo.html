@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html>
 <head>
@@ -6,30 +5,29 @@
 html, body {
   width: 100%;
   height: 100%;
-  overflow: hidden;
   background-color: #222;
   color: white;
   padding: 0;
   margin: 0;
-}
-
-#bodyDiv {
-  display: flex;
-  flex-direction: column;
-  padding: 0;
-  margin: 0;
-  width: 100%;
-  height: 100%;
+  overflow: hidden;
 }
 
 a {
   color: #79f;
-  text-decoration: underline;
+  text-decoration: none;
   cursor: pointer;
 }
 
+a:hover {
+  text-decoration: underline;
+}
+
+#leftBarDiv > a {
+  display: block;
+}
+
 #container {
-  flex: 1;
+  height: calc(100% - 1.4em);
   display: flex;
   flex-direction: row;
   border-top: solid white 1px;
@@ -37,12 +35,18 @@ a {
 
 #topBarDiv {
   padding: 0.2em;
+  height: 1.4em;
+}
+
+#topBarDiv > a {
+  display: inline;
 }
 
 #leftBarDiv {
   border-right: solid white 1px;
-  min-width: 96px;
-  padding: 0.2em;
+  width: 256px;
+  padding: 0.3em;
+  overflow-y: auto;
 }
 
 #mainVideo {
@@ -63,7 +67,7 @@ const FILE_INDEX = <JSON_INDEX_DATA>;
 
 window.onresize = () => {
   let pad = 0;
-  let rect = bodyDiv.getBoundingClientRect();
+  let rect = document.body.getBoundingClientRect();
   let trect = topBarDiv.getBoundingClientRect();
   rect.width -= pad;
   rect.height -= pad + trect.height;
@@ -99,7 +103,7 @@ function update_top_bar() {
     lines.push(line);
   }
 
-  topBarDiv.innerHTML = lines.join('/');
+  topBarDiv.innerHTML = lines.join(' / ');
 
   //topBarDiv.innerHTML = currentLocation.map(x => '<a href="">' + x + '</a>').join('/');
 }
@@ -123,8 +127,27 @@ function onlinkclick(abspath, time) {
 
 const kBadFormats = ['.avi', '.AVI', '.m4v', '.mkv', '.mht', '.mKV', '.wmv']
 
+function mp4s_at_dir(dir) {
+  let files = FILE_INDEX[dir];
+  files = files.filter(x => x.endsWith('.mp4'));
+  return files;
+}
+
+function dirs_at_dir(dir) {
+  let files = FILE_INDEX[dir];
+  files = files.filter(x => !x.endsWith('.mp4'));
+  for (let fmt of kBadFormats) {
+    files = files.filter(x => !x.endsWith(fmt));
+  }
+  return files;
+}
+
 function update_left_bar() {
   let loc = currentLocation;
+  let currentFile = null;
+  if (mainVideo.src.split('/').length > 1) {
+    currentFile = mainVideo.src.split('/').back();
+  }
 
   // If the location isn't found, it's probably because it's a video file,
   // so we pop it off to get the parent directory.
@@ -134,16 +157,15 @@ function update_left_bar() {
   }
 
   let lines = [];
-  for (let filename of FILE_INDEX[loc.join('/')]) {
-    let bad = false;
-    for (let format of kBadFormats) {
-      if (filename.endsWith(format)) {
-        bad = true;
-      }
+  for (let filename of mp4s_at_dir(loc.join('/'))) {
+    let abspath = loc.join('/') + '/' + filename;
+    if (filename == currentFile) {
+      lines.push('<a style="color:#f44;" onclick="onlinkclick(\'' + abspath + '\')">' + filename + '</a>');
+    } else {
+      lines.push('<a onclick="onlinkclick(\'' + abspath + '\')">' + filename + '</a>');
     }
-    if (bad) {
-      continue;
-    }
+  }
+  for (let filename of dirs_at_dir(loc.join('/'))) {
     let abspath = loc.join('/') + '/' + filename;
     lines.push('<a onclick="onlinkclick(\'' + abspath + '\')">' + filename + '</a>');
   }
@@ -151,7 +173,9 @@ function update_left_bar() {
 }
 
 function url2json(url) {
-  if (!url.includes('?')) return {}
+  if (!url.includes('?')) {
+    return {};
+  }
   let parts = url.split('?')[1].split('&');
   let r = {}
   for (let part of parts) {
@@ -162,7 +186,6 @@ function url2json(url) {
 }
 
 window.onload = () => {
-  console.log('onload');
   mainVideo.addEventListener('canplay', () => {
     window.onresize();
   });
@@ -189,7 +212,8 @@ function text2clipboard(txt) {
 }
 
 function link2clipboard(includeTime) {
-  let path = encodeURIComponent(currentLocation.join('/'));
+  // let path = encodeURIComponent(currentLocation.join('/'));
+  let path = mainVideo.src.split('/').slice(4).join('/');
   let time = mainVideo.currentTime;
   if (includeTime) {
     text2clipboard('10.0.0.241:8080/?path=' + path +'&time=' + time);
@@ -209,7 +233,6 @@ function embiggen() {
 </script>
 </head>
 <body>
-<div id='bodyDiv'>
   <div style='display:flex; flex-direction:row'>
     <div>
       <div id='topBarDiv' style='display:inline-block'></div>
@@ -224,6 +247,5 @@ function embiggen() {
       <video id='mainVideo' controls autoplay></video>
     </div>
   </div>
-</div>
 </body>
 </html>
