@@ -20,6 +20,11 @@ After this you MUST BE CAREFUL. Incorrect action can result in wiping your entir
 sudo dd bs=1m if=raspbian.img of=/dev/rdisk6 conv=sync
 ```
 
+6. Eject the SD cars
+```
+sudo diskutil eject /dev/rdisk6
+```
+
 Where `raspbian.img` should be the path to the image you downloaded at the beginning. This may take a few minutes.
 
 ### Configure
@@ -32,9 +37,22 @@ Where `raspbian.img` should be the path to the image you downloaded at the begin
 
 ### Enable SSH
 
+#### GUI Approach
+
 1. Navigate to Menu Bar > Navigate to Preferences > Raspberry Pi Configuration > Interfaces.
 2. Enable SSH.
 3. Click OK.
+
+#### COMMAND LINE APPROACH
+
+1. Enter `sudo raspi-config` in a terminal window
+2. Select `Interfacing Options`
+3. Navigate to and select `SSH`
+4. Choose `Yes`
+5. Select `Ok`
+6. Choose `Finish`
+
+#### TO SSH
 
 To ssh, just run
 
@@ -48,16 +66,14 @@ ssh pi@10.0.0.241
 
 ### Golang
 
-First, download Go from [golang.org/dl](golang.org/dl). Next, install Go by following the directions at [golang.org/doc/install](golang.org/doc/install):
+To install Go, simply run
 
-```bash
-cd Downloads
-sudo tar -C /usr/local -xzf go$VERSION.$OS-$ARCH.tar.gz
-vi ~/.profile
-# add "export PATH=$PATH:/usr/local/go/bin"
+```
+sudo apt-get update
+sudo apt-get install golang
 ```
 
-Finally, restart your computer (restarting you command line might be enough).
+Now, just restart your command line.
 
 ### Repo
 
