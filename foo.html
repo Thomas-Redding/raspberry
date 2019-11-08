@@ -3,13 +3,39 @@
 <head>
 <style>
 html, body {
+  background-color: #111;
+  display: flex;
+  flex-direction: column;
   width: 100%;
   height: 100%;
-  background-color: #222;
-  color: white;
-  padding: 0;
+  color: #999;
   margin: 0;
-  overflow: hidden;
+  padding: 0;
+  overflow-y: hidden;
+}
+
+#searchResultsDiv {
+  padding-top: 1.2em;
+}
+
+#rightCollapseButton {
+  position: absolute;
+  background-color: white;
+  top: 0;
+  width: 1.5em;
+  text-align: center;
+  left: 0;
+  cursor: pointer;
+}
+
+#leftCollapseButton {
+  position: absolute;
+  background-color: white;
+  top: 0;
+  width: 1.5em;
+  text-align: center;
+  right: 0;
+  cursor: pointer;
 }
 
 a {
@@ -22,257 +48,327 @@ a:hover {
   text-decoration: underline;
 }
 
-#leftBarDiv > a {
-  display: block;
-}
-
-#container {
-  height: calc(100% - 1.4em);
+#topBarDiv {
+  border-bottom: solid #888 1px;
+  font-size: 1.2em;
   display: flex;
   flex-direction: row;
-  border-top: solid white 1px;
+  padding: 0.2em 1em;
 }
 
-#topBarDiv {
+#bottomBarDiv {
+  border-top: solid #888 1px;
+  padding: 0.2em 1em;
+}
+
+input[type="text"] {
+  cursor: pointer;
+  border-radius: 0.3em;
+  outline: none;
+  border: none;
+
+  padding: 1px 1px 0 1px;
+  border-width: 0 0 1px 0;
+  border-color: #f88;
+  border-style: solid;
+  box-shadow: none;
+}
+input[type="text"]:focus {
+  border-width: 1px 0 1px 0;
+}
+input[type="text"]:focus:hover {
+  cursor: text;
+}
+
+input {
+  background-color: #383838;
+  color: #bbb;
+}
+input:focus {
+  background-color: #484848;
+}
+
+input[type="button"] {
+  cursor: pointer;
+  border-radius: 0.3em;
+  outline: none;
+  border: solid #8f8 1px;
+  box-shadow: none;
+}
+
+div {
+  padding: 0;
+  margin: 0;
+}
+
+#rightBarDiv {
+  border-left: solid #888 1px;
   padding: 0.2em;
-  height: 1.4em;
-}
-
-#topBarDiv > a {
-  display: inline;
+  width: 1.5em;
+  overflow-y: auto;
+  position: relative;
 }
 
 #leftBarDiv {
-  border-right: solid white 1px;
-  width: 256px;
-  padding: 0.3em;
+  border-right: solid #888 1px;
+  padding:0.2em;
+  width: 192px;
   overflow-y: auto;
-}
-
-#mainVideo {
-  max-height: 100%;
-  max-width: 100%;
-  height: 100vh;
-}
-
-#videoDiv {
-  flex: 1;
   position: relative;
+}
+
+#leftBarDiv > div {
+  padding: 0.2em 0;
 }
 
 </style>
 <script>
 
-const FILE_INDEX = <JSON_INDEX_DATA>;
-let currentLocation = ['videos']
-const kBadFormats = ['.avi', '.AVI', '.m4v', '.mkv', '.mht', '.mKV', '.wmv']
-
-window.onresize = () => {
-  let pad = 0;
-  let rect = document.body.getBoundingClientRect();
-  let trect = topBarDiv.getBoundingClientRect();
-  rect.width -= pad;
-  rect.height -= pad + trect.height;
-  let r = mainVideo.videoWidth / mainVideo.videoHeight;
-  if (rect.width / rect.height > r) {
-    let h = rect.height;
-    mainVideo.style.height = Math.floor(h) + 'px';
-    mainVideo.style.width = Math.floor(h * r) + 'px';
-  } else {
-    let w = rect.width;
-    mainVideo.style.width = Math.floor(w) + 'px';
-    mainVideo.style.height = Math.floor(w / r) + 'px';
+const cookies = {
+  "set": (key, value) => {
+    key = encodeURIComponent(key);
+    value = encodeURIComponent(JSON.stringify(value))
+    let newCookie = key + "=" + value + "; path=/; expires=Fri, 01 Jan 2038 01:01:01 GMT;"
+    if (newCookie.length > 1000) {
+      return false;
+    }
+    document.cookie = newCookie;
+    return true;
+  },
+  "get": (key) => {
+    key = encodeURIComponent(key);
+    let index = document.cookie.search(key + "=");
+    if (index == -1) return;
+    let cookiesAfterKey = document.cookie.substr(index + key.length + 1);
+    let semicolonIndex = cookiesAfterKey.search(";");
+    if (semicolonIndex == -1) semicolonIndex = cookiesAfterKey.length;
+    return JSON.parse(decodeURIComponent(cookiesAfterKey.substr(0, semicolonIndex)));
+  },
+  "contains": (key) => {
+    key = encodeURIComponent(key);
+    return document.cookie.search(key + "=") !== -1;
+  },
+  "del": (key) => {
+    key = encodeURIComponent(key);
+    document.cookie = key + '=; path=/; expires=Tue, 01 Oct 2019 01:01:01 GMT;';
   }
+};
+
+const FILE_INDEX = <JSON_INDEX_DATA>
+
+let currentLocation = ['videos']
+
+const kBadFormats = [
+  '.avi', '.AVI', '.m4v',
+  '.mkv', '.mht', '.mKV',
+  '.wmv'];
+
+function cd(loc) {
+  let children = FILE_INDEX[loc];
+  loc = loc.split('/');
+
+  leftBarDiv.children[0].innerHTML = '';
+  for (let child of children) {
+    let skip = false;
+    for (let badFormat of kBadFormats) {
+      skip |= child.endsWith(badFormat);
+    }
+    if (skip) {
+      continue;
+    }
+
+    loc.push(child);
+    let gpath = loc.join('/');
+    loc.pop();
+
+    let div = document.createElement('DIV');
+    if (gpath in FILE_INDEX) {
+      // directory
+      div.innerHTML = "<a onclick='cd(\"" + gpath + "\")'>" + child + "</a>";
+    } else {
+      // video
+      div.innerHTML = "<a onclick='load_video(\"" + gpath + "\")'>" + child + "</a>";
+    }
+    leftBarDiv.children[0].appendChild(div);
+  }
+
+	pathDiv.innerHTML = '';
+  for (let i = 0; i < loc.length; ++i) {
+    let t = '<a onclick="cd(\'' + loc.slice(0, i + 1).join('/') + '\')">' + loc[i] + '</a>';
+    if (i !== 0) {
+      pathDiv.innerHTML += ' / ';
+    }
+    pathDiv.innerHTML += t;
+  }
+}
+
+function str2kmers(text, k) {
+  text = text.toLowerCase();
+  let r = {};
+  for (let i = 0; i < text.length - k + 1; ++i) {
+    r[text.slice(i, i + k)] = 1;
+  }
+  return r;
 }
 
 Array.prototype.back = function() {
   return this[this.length - 1];
 }
 
-function update_top_bar() {
-  let url = '';
-  let lines = [];
-  for (let dir of currentLocation) {
-    url += dir;
-    let line = '<a onclick="onlinkclick(\'' + url + '\')">' + dir + '</a>';
-    url += '/';
-    lines.push(line);
-  }
-  topBarDiv.innerHTML = lines.join(' / ');
-}
+function search(text) {
+  let tokens = str2kmers(text, 3);
 
-function onlinkclick(abspath, time) {
-  if (abspath.endsWith('.mp4')) {
-    mainVideo.src = '@/' + abspath;
-    if (time !== undefined) {
-      let fn = () => {
-        mainVideo.currentTime = time;
-        mainVideo.removeEventListener('canplay', fn);
-      };
-      mainVideo.addEventListener('canplay', fn);
+  let f = (filename) => {
+    let A = str2kmers(filename, 3);
+    let r = 0;
+    for (let k in A) {
+      r += (k in tokens ? 1 : 0);
+    }
+    return r;
+  }
+
+  let results = [];
+  for (let k in FILE_INDEX) {
+    for (let filename of FILE_INDEX[k]) {
+      if (filename.endsWith('.mp4')) {
+        let score = f(k + '/' + filename);
+        if (score > 1) {
+          results.push([score, k + '/' + filename]);
+        }
+      }
     }
   }
-  currentLocation = abspath.split('/');
-  update_top_bar();
-  update_left_bar();
-}
 
+	results.sort((a, b) => b[0] - a[0]);
+  results = results.slice(0, 10);
 
-function mp4s_at_dir(dir) {
-  let files = FILE_INDEX[dir];
-  files = files.filter(x => x.endsWith('.mp4'));
-  return files;
-}
-
-function dirs_at_dir(dir) {
-  let files = FILE_INDEX[dir];
-  files = files.filter(x => !x.endsWith('.mp4'));
-  for (let fmt of kBadFormats) {
-    files = files.filter(x => !x.endsWith(fmt));
-  }
-  return files;
-}
-
-function update_left_bar() {
-  let loc = currentLocation;
-  let currentFile = null;
-  if (mainVideo.src.split('/').length > 1) {
-    currentFile = mainVideo.src.split('/').back();
+  if (rightCollapseButton.innerHTML == '&lt;') {
+    toggleRightBar();
   }
 
-  // If the location isn't found, it's probably because it's a video file,
-  // so we pop it off to get the parent directory.
-  if (!(loc.join('/') in FILE_INDEX)) {
-    loc = loc.slice();  // copy
-    loc.pop();
+  searchResultsDiv.innerHTML = '';
+  for (let r of results) {
+    let parts = r[1].split('/');
+    let filename = parts.slice(parts.length - 2).join('/');
+    // let filename = r[1].split('/').back();
+    searchResultsDiv.innerHTML += '<a onclick="load_video(\'' + r[1]  + '\')">' + filename + '</a> (' + r[0] + ')<br>';
   }
+}
 
-  let lines = [];
-  for (let filename of mp4s_at_dir(loc.join('/'))) {
-    let abspath = loc.join('/') + '/' + filename;
-    if (filename == currentFile) {
-      lines.push('<a style="color:#f44;" onclick="onlinkclick(\'' + abspath + '\')">' + filename + '</a>');
-    } else {
-      lines.push('<a onclick="onlinkclick(\'' + abspath + '\')">' + filename + '</a>');
+window.onresize = () => {
+  if (mainVideo.videoWidth === 0) {
+    return;
+  }
+  let r = mainVideo.parentNode.getBoundingClientRect();
+  if (mainVideo.videoHeight / mainVideo.videoWidth > r.height / r.width) {
+    mainVideo.style.height = '100%';
+    mainVideo.style.width = 'auto';
+  } else {
+    mainVideo.style.height = 'auto%';
+    mainVideo.style.width = '100%';
+  }
+}
+function load_video(src, time) {
+  mainVideo.oncanplay = () => {
+    window.onresize();
+    if (time) {
+      mainVideo.currentTime = time;
     }
+    mainVideo.oncanplay = window.onresize;
   }
-  for (let filename of dirs_at_dir(loc.join('/'))) {
-    let abspath = loc.join('/') + '/' + filename;
-    lines.push('<a onclick="onlinkclick(\'' + abspath + '\')">' + filename + '</a>');
-  }
-  leftBarDiv.innerHTML = lines.join('<br>');
-}
-
-function url2json(url) {
-  if (!url.includes('?')) {
-    return {};
-  }
-  let parts = url.split('?')[1].split('&');
-  let r = {}
-  for (let part of parts) {
-    let a = part.split('=');
-    r[a[0]] = decodeURIComponent(a[1]);
-  }
-  return r;
-}
-
-Array.prototype.popBack = function() {
-  this.pop();
-  return this;
-}
-
-Array.prototype.pushBack = function(val) {
-  this.push(val);
-  return this;
+  mainVideo.src = '/@/' + src;
 }
 
 function load_next_video() {
-  let currentLoc = mainVideo.src.split('/').slice(4).join('/');
-  currentLoc = decodeURIComponent(currentLoc);
-  let neighbors = mp4s_at_dir(currentLoc.split('/').popBack().join('/'));
-  let idx = neighbors.indexOf(currentLoc.split('/').pop());
-  if (idx != neighbors.length - 1) {
-    let next = currentLoc.split('/').popBack().pushBack(neighbors[idx + 1]).join('/');
-    onlinkclick(next);
-  }
+  let loc = decodeURI(mainVideo.src).split('/').slice(4);
+  let currentFile = loc.back();
+  loc.pop();
+  let idx = FILE_INDEX[loc.join('/')].index(currentFile);
+  console.log(idx);
 }
 
-function update() {
-  if (autoplayCheckbox.checked) {
-    if (mainVideo.currentTime / mainVideo.duration >= 0.999) {
+function autoplay_thread() {
+  if (autocheckbox.checked) {
+    if (mainVideo.currentTime >= mainVideo.duration) {
       load_next_video();
     }
   }
 }
 
-
 window.onload = () => {
-  setInterval(update, 200);
-  mainVideo.addEventListener('canplay', () => {
-    window.onresize();
-  });
-
-  let urlParams = url2json(window.location.href);
-  let time = 0;
-  if ('path' in urlParams) {
-   currentLocation = urlParams['path'].split('/');
+  setInterval(autoplay_thread, 100);
+  if (cookies.contains('vidsrc')) {
+    let path = cookies.get('vidsrc');
+    load_video(path, cookies.get('time'));
   }
-  if ('time' in urlParams) {
-    time = urlParams['time'];
+
+  if (cookies.contains('path')) {
+    cd(cookies.get('path'));
   }
-  onlinkclick(currentLocation.join('/'), time);
-  window.onresize();
-}
-
-function text2clipboard(txt) {
-  let a = document.createElement('TEXTAREA');
-  a.value = txt;
-  document.body.appendChild(a);
-  a.select();
-  document.execCommand('copy');
-  document.body.removeChild(a);
-}
-
-function current_link(includeTime) {
-  let path = mainVideo.src.split('/').slice(4).join('/');
-  let time = mainVideo.currentTime;
-  let r = window.location.href.split('/')[2] + '/';
-  r += '?path=' + path;
-  if (includeTime) {
-    r += '&time=' + time;
+  else {
+    cd('videos');
   }
-  return r;
 }
 
-function link2clipboard(includeTime) {
-  text2clipboard(current_link(includeTime));
-}
-
-function embiggen() {
-  if (leftBarDiv.style.display != 'none') {
-    leftBarDiv.style.display = 'none';
+function toggleLeftBar() {
+  if (leftCollapseButton.innerHTML === '&lt;') {
+    leftBarDiv.style.width = '1.4em';
+    leftCollapseButton.innerHTML = '&gt;';
   } else {
-    leftBarDiv.style.display = 'block';
+    leftBarDiv.style.width = '192px';
+    leftCollapseButton.innerHTML = '&lt;';
+  }
+}
+
+function toggleRightBar() {
+  if (rightCollapseButton.innerHTML === '&gt;') {
+    rightBarDiv.style.width = '1.4em';
+    rightCollapseButton.innerHTML = '&lt;';
+  } else {
+    rightBarDiv.style.width = '224px';
+    rightCollapseButton.innerHTML = '&gt;';
+  }
+}
+
+function save_state() {
+  cookies.set('path', currentLocation.join('/'));
+  if (mainVideo.src) {
+    cookies.set('vidsrc', decodeURI(mainVideo.src).split('/').slice(4).join('/'))
+    cookies.set('time', mainVideo.currentTime);
+  } else {
+    cookies.del('vidsrc');
+    cookies.del('time');
   }
 }
 
 </script>
 </head>
-<body>
-  <div style='display:flex; flex-direction:row'>
+<body style='display:flex; flex-direction:column;' onbeforeunload='save_state();'>
+  <div id='topBarDiv'>
+    <div style='' id='pathDiv'></div>
+    <div style='width:2em;'></div>
+    <div style='flex:1; display:flex; flex-direction:row;'>
+      <input id='searchBox' onkeyup='search(this.value);' type='text' style='width:100%;'>
+    </div>
+  </div>
+  <div style='width:100%; display:flex; flex-direction: horizontal; min-height:0; flex:1;'>
+    <div id='leftBarDiv'>
+      <div style='width:100%; height:100%'></div>
+      <div id='leftCollapseButton' onclick='toggleLeftBar()'>&lt;</div>
+    </div>
+    <div style='flex:1; vertical-align:top; text-align:center;'>
+      <video id='mainVideo' controls autoplay style='width:99%; height:auto;'></video>
+    </div>
+    <div id='rightBarDiv' style='border-left: solid #888 1px;'>
+      <div id='searchResultsDiv'></div>
+      <div id='rightCollapseButton' onclick='toggleRightBar()'>&lt;</div>
+    </div>
+  </div>
+  <div id='bottomBarDiv'>
     <div>
-      <div id='topBarDiv' style='display:inline-block'></div>
-      <button onclick='link2clipboard(false)'>Copy Link</button>
-      <button onclick='link2clipboard(true)'>Copy Link @ Time</button>
-      <button onclick='embiggen()' id='embiggenButton'>Embiggen</button>
-      <input type='checkbox' id='autoplayCheckbox'><label for='autoplayCheckbox'>Autoplay</label>
+      <input id='autocheckbox' type='checkbox' checked><label for='autocheckbox'>Autoplay</label>
     </div>
   </div>
-  <div id='container'>
-    <div id='leftBarDiv'></div>
-    <div id='videoDiv'>
-      <video id='mainVideo' controls autoplay></video>
-    </div>
-  </div>
+</div>
 </body>
 </html>
