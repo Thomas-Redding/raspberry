@@ -169,6 +169,7 @@ const kBadFormats = [
   '.wmv'];
 
 function cd(loc) {
+  currentLocation = loc.split('/');
   let children = FILE_INDEX[loc];
   loc = loc.split('/');
 
@@ -288,8 +289,12 @@ function load_next_video() {
   let loc = decodeURI(mainVideo.src).split('/').slice(4);
   let currentFile = loc.back();
   loc.pop();
-  let idx = FILE_INDEX[loc.join('/')].index(currentFile);
-  console.log(idx);
+  let neighbors = FILE_INDEX[loc.join('/')];
+  let idx = neighbors.indexOf(currentFile);
+  if (idx !== neighbors.length - 1) {
+    let next = loc.join('/') + '/' + neighbors[idx + 1];
+    load_video(next);
+  }
 }
 
 function autoplay_thread() {
