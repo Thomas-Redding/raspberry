@@ -21,6 +21,7 @@ import (
   "time"
 )
 
+var PORT = "8080"
 var ROOT_PATH string
 var IS_UI bool
 var IS_HD bool
@@ -314,9 +315,9 @@ func main() {
     log.Printf("Building an index...")
     reconstructIndex(ROOT_PATH)
   }
-  log.Printf("Serving at http://localhost:8080/...")
+  log.Printf("Serving at http://localhost:" + PORT + "/...")
   http.HandleFunc("/", handle)
-  log.Printf("FATAL ERROR: %v", http.ListenAndServe(":8080", nil))
+  log.Printf("FATAL ERROR: %v", http.ListenAndServe(":" + PORT, nil))
 }
 
 func warmUpDisk() {
