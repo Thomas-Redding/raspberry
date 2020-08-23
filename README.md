@@ -108,10 +108,12 @@ crontab -e
 and add
 
 ```
-@reboot go run /path/to/gitrepo/main.go /path/to/file/serving/root -hd -ui -sleep
+@reboot go run /path/to/gitrepo/main.go /path/to/gitrepo /path/to/file/serving/root -hd -ui -sleep
 ```
 
-If you named the machine `pi`, then two paths are probably `home/pi/raspberry/main.go` and `/media/pi/Untitled/videos`, respectively.
+If you named the machine `pi`, then two paths are probably `home/pi/raspberry/main.go` and `/media/pi/Untitled, respectively.
+
+Note: the code expects all the media to be in a directory named `videos` inside the root directory. At some point we should fix this, but I'm too lazy now.
 
 ## Troubleshooting
 
