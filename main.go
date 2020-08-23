@@ -353,9 +353,9 @@ func handle(writer http.ResponseWriter, request *http.Request) {
 		} else {
 			warmUpDisk()
 			writer.Header().Set("Content-type", "text/html")
-			// slurp, _ := ioutil.ReadFile("foo.html")
-			// indexHTML := string(slurp)
-			indexHTML := INDEX_HTML
+			slurp, _ := ioutil.ReadFile("/home/pi/raspberry/foo.html")
+			indexHTML := string(slurp)
+			// indexHTML := INDEX_HTML
 			indexHTML = strings.Replace(indexHTML, "<JSON_INDEX_DATA>", INDEX_STRING, -1)
 			writer.WriteHeader(200)
 			writer.Write([]byte(indexHTML))

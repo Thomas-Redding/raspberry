@@ -1,198 +1,384 @@
-<meta charset="utf-8">
+<!DOCTYPE html>
+<html>
+<head>
 <style>
-html {
-  color: white;
-  overflow: hidden;
-  background-color: #222;
+html, body {
+  background-color: #111;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  color: #999;
+  margin: 0;
+  padding: 0;
+  overflow-y: hidden;
 }
-#container {
+
+#searchResultsDiv {
+  padding-top: 1.2em;
+}
+
+#rightCollapseButton {
   position: absolute;
-  left: 0;
+  background-color: white;
   top: 0;
-  width: 100vw;
-  height: 100vh;
-  overflow-x: scroll;
+  width: 1.5em;
+  text-align: center;
+  left: 0;
+  cursor: pointer;
 }
-table {
-  display: block;
-  overflow: hidden;
-  height: 100vh;
-  border-collapse: collapse;
+
+#leftCollapseButton {
+  position: absolute;
+  background-color: white;
+  top: 0;
+  width: 1.5em;
+  text-align: center;
+  right: 0;
+  cursor: pointer;
 }
-tbody {
-  display: block;
-  height: 100vh;
-}
-tr {
-  display: block;
-  height: 100vh;
-}
-td {
-  width: 12em;
-  vertical-align: top;
-}
-td > div {
-  height: 100vh;
-  overflow-y: scroll;
-}
-.file {
-  overflow-x: scroll;
-  line-height: 1.4em;
-}
-.selected {
-  background-color: hsl(240, 100%, 40%);
-}
+
 a {
-  color: hsl(50, 100%, 50%);
+  color: #79f;
+  text-decoration: none;
+  cursor: pointer;
 }
+
+a:hover {
+  text-decoration: underline;
+}
+
+#topBarDiv {
+  border-bottom: solid #888 1px;
+  font-size: 1.2em;
+  display: flex;
+  flex-direction: row;
+  padding: 0.2em 1em;
+}
+
+#bottomBarDiv {
+  border-top: solid #888 1px;
+  padding: 0.2em 1em;
+}
+
+input[type="text"] {
+  cursor: pointer;
+  border-radius: 0.3em;
+  outline: none;
+  border: none;
+
+  padding: 1px 1px 0 1px;
+  border-width: 0 0 1px 0;
+  border-color: #f88;
+  border-style: solid;
+  box-shadow: none;
+}
+input[type="text"]:focus {
+  border-width: 1px 0 1px 0;
+}
+input[type="text"]:focus:hover {
+  cursor: text;
+}
+
+input {
+  background-color: #383838;
+  color: #bbb;
+}
+input:focus {
+  background-color: #484848;
+}
+
+input[type="button"] {
+  cursor: pointer;
+  border-radius: 0.3em;
+  outline: none;
+  border: solid #8f8 1px;
+  box-shadow: none;
+}
+
+div {
+  padding: 0;
+  margin: 0;
+}
+
+#rightBarDiv {
+  border-left: solid #888 1px;
+  padding: 0.2em;
+  width: 1.5em;
+  overflow-y: auto;
+  position: relative;
+}
+
+#leftBarDiv {
+  border-right: solid #888 1px;
+  padding:0.2em;
+  width: 192px;
+  overflow-y: auto;
+  position: relative;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  background-color: #111;
+}
+
+#leftBarDiv > div {
+  padding: 0.2em 0;
+}
+
 </style>
 <script>
-let FILE_INDEX = <JSON_INDEX_DATA>;
-</script>
-<script>
-function navigateToPath() {
-  let td = document.createElement("TD");
-  containingRow.append(td);
-  let columnDiv = document.createElement("div");
-  for (let i = 0; i < FILE_INDEX[""].length; ++i) {
-    let fileName = FILE_INDEX[""][i];
-    let file = document.createElement("div");
-    file.classList.add("file");
-    if (!(fileName in FILE_INDEX)) {
-      let a = document.createElement("a");
-      a.href = "/@/" + completePath;
-      file.append(a);
-      a.innerHTML = FILE_INDEX[fileName][i];
-    } else {
-      file.innerHTML = FILE_INDEX[fileName][i];
+
+const cookies = {
+  "set": (key, value) => {
+    key = encodeURIComponent(key);
+    value = encodeURIComponent(JSON.stringify(value))
+    let newCookie = key + "=" + value + "; path=/; expires=Fri, 01 Jan 2038 01:01:01 GMT;"
+    if (newCookie.length > 1000) {
+      return false;
     }
-    columnDiv.append(file);
-    td.append(columnDiv);
+    document.cookie = newCookie;
+    return true;
+  },
+  "get": (key) => {
+    key = encodeURIComponent(key);
+    let index = document.cookie.search(key + "=");
+    if (index == -1) return;
+    let cookiesAfterKey = document.cookie.substr(index + key.length + 1);
+    let semicolonIndex = cookiesAfterKey.search(";");
+    if (semicolonIndex == -1) semicolonIndex = cookiesAfterKey.length;
+    return JSON.parse(decodeURIComponent(cookiesAfterKey.substr(0, semicolonIndex)));
+  },
+  "contains": (key) => {
+    key = encodeURIComponent(key);
+    return document.cookie.search(key + "=") !== -1;
+  },
+  "del": (key) => {
+    key = encodeURIComponent(key);
+    document.cookie = key + '=; path=/; expires=Tue, 01 Oct 2019 01:01:01 GMT;';
   }
 };
 
-function selectionIndexPath() {
-  let rtn = [];
-  for (let i = 0; i < containingRow.children.length; ++i) {
-    let cell = containingRow.children[i];
-    for (let j = 0; j < cell.children[0].children.length; ++j) {
-      if (cell.children[0].children[j].classList.contains("selected")) {
-        rtn.push(j);
+const FILE_INDEX = <JSON_INDEX_DATA>
+
+let currentLocation = ['videos']
+
+const kBadFormats = [
+  '.avi', '.AVI', '.m4v',
+  '.mkv', '.mht', '.mKV',
+  '.wmv'];
+
+function cd(loc) {
+  currentLocation = loc.split('/');
+  let children = FILE_INDEX[loc];
+  loc = loc.split('/');
+
+  leftBarDiv.children[0].innerHTML = '';
+  for (let child of children) {
+    let skip = false;
+    for (let badFormat of kBadFormats) {
+      skip |= child.endsWith(badFormat);
+    }
+    if (skip) {
+      continue;
+    }
+
+    loc.push(child);
+    let gpath = loc.join('/');
+    loc.pop();
+
+    let div = document.createElement('DIV');
+    if (gpath in FILE_INDEX) {
+      // directory
+      div.innerHTML = "<a onclick='cd(\"" + gpath + "\")'>" + child + "</a>";
+    } else {
+      // video
+      div.innerHTML = "<a onclick='load_video(\"" + gpath + "\")'>" + child + "</a>";
+    }
+    leftBarDiv.children[0].appendChild(div);
+  }
+
+	pathDiv.innerHTML = '';
+  for (let i = 0; i < loc.length; ++i) {
+    let t = '<a onclick="cd(\'' + loc.slice(0, i + 1).join('/') + '\')">' + loc[i] + '</a>';
+    if (i !== 0) {
+      pathDiv.innerHTML += ' / ';
+    }
+    pathDiv.innerHTML += t;
+  }
+}
+
+function str2kmers(text, k) {
+  text = text.toLowerCase();
+  let r = {};
+  for (let i = 0; i < text.length - k + 1; ++i) {
+    r[text.slice(i, i + k)] = 1;
+  }
+  return r;
+}
+
+Array.prototype.back = function() {
+  return this[this.length - 1];
+}
+
+function search(text) {
+  let tokens = str2kmers(text, 3);
+
+  let f = (filename) => {
+    let A = str2kmers(filename, 3);
+    let r = 0;
+    for (let k in A) {
+      r += (k in tokens ? 1 : 0);
+    }
+    return r;
+  }
+
+  let results = [];
+  for (let k in FILE_INDEX) {
+    for (let filename of FILE_INDEX[k]) {
+      if (filename.endsWith('.mp4')) {
+        let score = f(k + '/' + filename);
+        if (score > 1) {
+          results.push([score, k + '/' + filename]);
+        }
       }
     }
   }
-  return rtn;
-}
 
-function filePathFromIndexPath(indexPath) {
-  let rtn = [];
-  for (let i = 0; i < indexPath.length; ++i) {
-    let cell = containingRow.children[i];
-    rtn.push(cell.children[0].children[indexPath[i]].innerText);
+	results.sort((a, b) => b[0] - a[0]);
+  results = results.slice(0, 10);
+
+  if (rightCollapseButton.innerHTML == '&lt;') {
+    toggleRightBar();
   }
-  return rtn.join("/");
+
+  searchResultsDiv.innerHTML = '';
+  for (let r of results) {
+    let parts = r[1].split('/');
+    let filename = parts.slice(parts.length - 2).join('/');
+    // let filename = r[1].split('/').back();
+    searchResultsDiv.innerHTML += '<a onclick="load_video(\'' + r[1]  + '\')">' + filename + '</a> (' + r[0] + ')<br>';
+  }
 }
 
-function fileDiv(parentPath, fileName) {
-  let totalPath = parentPath + "/" + fileName;
-  if (parentPath == "") totalPath = fileName;
-  let file = document.createElement("DIV");
-  file.classList.add("file");
-  if (totalPath in FILE_INDEX) {
-    file.innerHTML = fileName;
+window.onresize = () => {
+  if (mainVideo.videoWidth === 0) {
+    return;
+  }
+  let r = mainVideo.parentNode.getBoundingClientRect();
+  if (mainVideo.videoHeight / mainVideo.videoWidth > r.height / r.width) {
+    mainVideo.style.height = '100%';
+    mainVideo.style.width = 'auto';
   } else {
-    let a = document.createElement("A");
-    a.href = "/@/" + totalPath;
-    a.innerHTML = fileName;
-    file.append(a);
+    mainVideo.style.height = 'auto%';
+    mainVideo.style.width = '100%';
   }
-  return file;
+}
+function load_video(src, time) {
+  mainVideo.oncanplay = () => {
+    window.onresize();
+    if (time) {
+      mainVideo.currentTime = time;
+    }
+    mainVideo.oncanplay = window.onresize;
+  }
+  mainVideo.src = '/@/' + src;
 }
 
-onkeydown = (event) => {
-  event.preventDefault();
-  if (event.keyCode == 37) {
-    // left
-    let indexPath = selectionIndexPath()
-    let filePath = filePathFromIndexPath(indexPath);
-    if (filePath in FILE_INDEX) {
-      // The leaf is a directory.
-      let lastCell = containingRow.children[containingRow.children.length - 1];
-      containingRow.removeChild(lastCell);
-    }
-    let lastCell = containingRow.children[containingRow.children.length - 1];
-    lastCell.children[0].children[indexPath[indexPath.length - 1]].classList.remove("selected");
-  } else if (event.keyCode == 39) {
-    let lastCell = containingRow.children[containingRow.children.length - 1];
-    lastCell.children[0].children[0].classList.add("selected");
-    let s = selectionIndexPath();
-    let filePath = filePathFromIndexPath(s);
-    if (!(filePath in FILE_INDEX)) {
-      // The leaf is a file
-      return;
-    }
-    let children = FILE_INDEX[filePath];
-    let td = document.createElement("TD");
-    let div = document.createElement("DIV");
-    for (let i = 0; i < children.length; ++i) {
-      div.append(fileDiv(filePath, children[i]));
-    }
-    td.append(div);
-    containingRow.append(td);
-  } else if (event.keyCode == 38 || event.keyCode == 40) {
-    // up or down
-    let isUp = (event.keyCode == 38);
-    let indexPath = selectionIndexPath()
-    let filePath = filePathFromIndexPath(indexPath);
-    let selectedCell = containingRow.children[indexPath.length - 1];
-    let fileContainer = selectedCell.children[0];
-    if (filePath in FILE_INDEX) {
-      // The original leaf is a directory. Close it.
-      let lastCell = containingRow.children[containingRow.children.length - 1];
-      containingRow.removeChild(lastCell);
-    }
-    let selectedRow = indexPath[indexPath.length - 1];
-    if (isUp) {
-      if (selectedRow == 0) return;
-      fileContainer.children[selectedRow-1].classList.add("selected");
-    } else {
-      if (selectedRow + 1 == fileContainer.children.length) return;
-      fileContainer.children[selectedRow+1].classList.add("selected");
-    }
-    fileContainer.children[selectedRow].classList.remove("selected");
-    fileContainer.scrollTo(0, fileContainer.children[selectedRow].offsetTop - 100);
-    indexPath = selectionIndexPath()
-    filePath = filePathFromIndexPath(indexPath);
-    if (filePath in FILE_INDEX) {
-      // The leaf is a directory. Open it.
-      let td = document.createElement("TD");
-      let div = document.createElement("DIV");
-      let children = FILE_INDEX[filePath];
-      for (let i = 0; i < children.length; ++i) {
-        div.append(fileDiv(filePath, children[i]));
-      }
-      td.append(div);
-      containingRow.append(td);
-      return;
-    }
+function load_next_video() {
+  let loc = decodeURI(mainVideo.src).split('/').slice(4);
+  let currentFile = loc.back();
+  loc.pop();
+  let neighbors = FILE_INDEX[loc.join('/')];
+  let idx = neighbors.indexOf(currentFile);
+  if (idx !== neighbors.length - 1) {
+    let next = loc.join('/') + '/' + neighbors[idx + 1];
+    load_video(next);
   }
-};
+}
 
-onload = () => {
-  let td = document.createElement("TD");
-  let div = document.createElement("DIV");
-  let children = FILE_INDEX[""];
-  for (let i = 0; i < children.length; ++i) {
-    div.append(fileDiv("", children[i]));
+function autoplay_thread() {
+  if (autocheckbox.checked) {
+    if (mainVideo.currentTime >= mainVideo.duration) {
+      load_next_video();
+    }
   }
-  td.append(div);
-  containingRow.append(td);
-};
+}
+
+window.onload = () => {
+  setInterval(autoplay_thread, 100);
+  if (cookies.contains('vidsrc')) {
+    let path = cookies.get('vidsrc');
+    load_video(path, cookies.get('time'));
+  }
+
+  if (cookies.contains('path')) {
+    cd(cookies.get('path'));
+  }
+  else {
+    cd('videos');
+  }
+}
+
+function toggleLeftBar() {
+  if (leftCollapseButton.innerHTML === '&lt;') {
+    leftBarDiv.style.width = '1.4em';
+    leftCollapseButton.innerHTML = '&gt;';
+  } else {
+    leftBarDiv.style.width = '192px';
+    leftCollapseButton.innerHTML = '&lt;';
+  }
+}
+
+function toggleRightBar() {
+  if (rightCollapseButton.innerHTML === '&gt;') {
+    rightBarDiv.style.width = '1.4em';
+    rightCollapseButton.innerHTML = '&lt;';
+  } else {
+    rightBarDiv.style.width = '224px';
+    rightCollapseButton.innerHTML = '&gt;';
+  }
+}
+
+function save_state() {
+  cookies.set('path', currentLocation.join('/'));
+  if (mainVideo.src) {
+    cookies.set('vidsrc', decodeURI(mainVideo.src).split('/').slice(4).join('/'))
+    cookies.set('time', mainVideo.currentTime);
+  } else {
+    cookies.del('vidsrc');
+    cookies.del('time');
+  }
+}
+
 </script>
-<div id="container">
-  <table>
-    <tbody>
-      <tr id="containingRow"></tr>
-    </tbody>
-  </table>
+</head>
+<body style='display:flex; flex-direction:column;' onbeforeunload='save_state();'>
+  <div id='topBarDiv'>
+    <div style='' id='pathDiv'></div>
+    <div style='width:2em;'></div>
+    <div style='flex:1; display:flex; flex-direction:row;'>
+      <input id='searchBox' onkeyup='search(this.value);' type='text' style='width:100%;'>
+    </div>
+  </div>
+  <div style='width:100%; display:flex; flex-direction: horizontal; min-height:0; flex:1;'>
+    <div id='leftBarDiv'>
+      <div style='width:100%; height:100%'></div>
+      <div id='leftCollapseButton' onclick='toggleLeftBar()'>&lt;</div>
+    </div>
+    <div style='flex:1; vertical-align:top; text-align:center;'>
+      <video id='mainVideo' controls autoplay style='width:99%; height:auto;'></video>
+    </div>
+    <div id='rightBarDiv' style='border-left: solid #888 1px;'>
+      <div id='searchResultsDiv'></div>
+      <div id='rightCollapseButton' onclick='toggleRightBar()'>&lt;</div>
+    </div>
+  </div>
+  <div id='bottomBarDiv'>
+    <div>
+      <input id='autocheckbox' type='checkbox' checked><label for='autocheckbox'>Autoplay</label>
+    </div>
+  </div>
 </div>
+</body>
+</html>
