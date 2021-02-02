@@ -1,5 +1,11 @@
 # Raspberry
 
+## Make `vids.com` redirect to the site
+
+```
+sudo sh -c 'echo "192.168.1.143 vids.com" >> /etc/hosts'
+```
+
 ## Basic Installation
 
 ### Download
