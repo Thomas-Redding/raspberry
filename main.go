@@ -21,7 +21,7 @@ import (
   "time"
 )
 
-var PORT = "8080"
+var PORT = "80"
 var ROOT_PATH string
 var REPO_PATH string
 var IS_UI bool
@@ -78,12 +78,12 @@ func main() {
   for i, arg := range(os.Args) {
     if i == 0 { continue }
     if arg[0] != '-' {
-    	if REPO_PATH == "" {
-    		REPO_PATH = arg
-    	} else if ROOT_PATH == "" {
+      if REPO_PATH == "" {
+        REPO_PATH = arg
+      } else if ROOT_PATH == "" {
         ROOT_PATH = arg
       } else {
-      	log.Printf("Too many paths given (2 expected).\n")
+        log.Printf("Too many paths given (2 expected).\n")
         os.Exit(1)
       }
       continue
@@ -102,11 +102,11 @@ func main() {
     }
   }
   if REPO_PATH == "" {
-  	log.Printf("No repo path provided.\n")
-  	os.Exit(1)
+    log.Printf("No repo path provided.\n")
+    os.Exit(1)
   }
   if REPO_PATH[0] != '/' {
-  	log.Printf("Repo path must be absolute.\n")
+    log.Printf("Repo path must be absolute.\n")
     os.Exit(1)
   }
   if ROOT_PATH == "" {
