@@ -434,7 +434,7 @@ function add_to_recent(vidsrc) {
 
   recent = [vidsrc].concat(recent);
   let t = recent.join('|');
-  while (t.length > 4000) {
+  while (t.length > 3000) {
     recent.pop();
     t = recent.join('|');
   }
