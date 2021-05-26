@@ -379,6 +379,7 @@ function load_video(path, time) {
     mainVideo.oncanplay = window.onresize;
   }
   mainVideo.src = '/@/' + path2url(path);
+  save_state();
   add_to_recent(path);
   leftPanel.render();
 }
