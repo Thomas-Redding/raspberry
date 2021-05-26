@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html>
 <meta charset="UTF-8">
@@ -377,6 +376,7 @@ function load_video(path, time) {
   }
   mainVideo.src = '/@/' + path2url(path);
   save_state();
+  add_to_recent(path);
   leftPanel.render();
 }
 
@@ -388,14 +388,14 @@ function autoplay_thread() {
   }
 }
 
-window.onload = () => {
+window.addEventListener('load', () => {
   leftPanel = new LeftPanel();
   setInterval(autoplay_thread, 100);
   if (cookies.contains('vidsrc')) {
     let path = cookies.get('vidsrc');
     load_video(path, cookies.get('time'));
   }
-}
+});
 
 /*
 
@@ -424,6 +424,25 @@ function volume_changed() {
   cookies.set('volume', mainVideo.volume);
 }
 
+function add_to_recent(vidsrc) {
+  let recent = [];
+  if (cookies.get('recent')) {
+    recent = cookies.get('recent').split('|');
+  }
+  if (recent.includes(vidsrc)) {
+    recent.splice(recent.indexOf(vidsrc), 1);
+  }
+
+  recent = [vidsrc].concat(recent);
+  let t = recent.join('|');
+  while (t.length > 3000) {
+    recent.pop();
+    t = recent.join('|');
+  }
+  cookies.set('recent', t);
+}
+
+
 </script>
 </head>
 <body style='display:flex; flex-direction:column;' onbeforeunload='save_state();'>
@@ -440,9 +459,6 @@ function volume_changed() {
       <input id='searchBox' onkeyup='search(this.value);' type='text' style='width:100%;'>
     </div>
     <div style='width:1em;'></div>
-    <button>
-    Clip 60s
-    </button>
     <div style='width:1em;'></div>
     <div id='rightHamburger'>
       <img class='hamburger' src='./@/hamburger.png'>
