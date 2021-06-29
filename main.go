@@ -65,9 +65,11 @@ func reconstructIndex(rootPath string) {
       }
     }
   }
+  slurp, _ := json.Marshal(newIndex)
+  indexString := string(slurp)
+  // TODO: Make thread safe.
   FILE_INDEX = newIndex
-  slurp, _ := json.Marshal(FILE_INDEX)
-  INDEX_STRING = string(slurp)
+  INDEX_STRING = indexString
 }
 
 func main() {
@@ -172,6 +174,11 @@ func handle(writer http.ResponseWriter, request *http.Request) {
       writer.Write([]byte(indexHTML))
       return
     }
+  }
+
+  if (strings.HasPrefix(requestPath, "/reindex")) {
+    SendError(writer, 200, "Ok")
+    reconstructIndex(ROOT_PATH)
   }
 
   path := ROOT_PATH + requestPath
