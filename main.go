@@ -179,6 +179,7 @@ func handle(writer http.ResponseWriter, request *http.Request) {
   if (strings.HasPrefix(requestPath, "/reindex")) {
     SendError(writer, 200, "Ok")
     reconstructIndex(ROOT_PATH)
+    return
   }
 
   path := ROOT_PATH + requestPath
