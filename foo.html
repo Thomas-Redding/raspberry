@@ -447,6 +447,21 @@ function add_to_recent(vidsrc) {
 }
 
 
+function screenshot() {
+  let cvs = document.createElement('CANVAS');
+  cvs.width = mainVideo.videoWidth;
+  cvs.height = mainVideo.videoHeight;
+  let c = cvs.getContext('2d');
+  c.drawImage(mainVideo, 0, 0);
+  cvs.style.position = 'fixed';
+  cvs.style.left = '8px';
+  cvs.style.top = '8px';
+  cvs.addEventListener('click', () => {
+    document.body.removeChild(cvs);
+  });
+  document.body.appendChild(cvs);
+}
+
 </script>
 </head>
 <body style='display:flex; flex-direction:column;' onbeforeunload='save_state();'>
@@ -457,6 +472,10 @@ function add_to_recent(vidsrc) {
     <div style='width:1em;'></div>
     <div>
       <input id='autocheckbox' type='checkbox' checked><label for='autocheckbox'>Autoplay</label>
+    </div>
+    <div style='width:1em;'></div>
+    <div>
+      <button onClick='screenshot()'>Screenshot</button>
     </div>
     <div style='width:1em;'></div>
     <div style='flex:1; display:flex; flex-direction:row;'>
