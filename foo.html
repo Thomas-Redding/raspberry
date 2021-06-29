@@ -323,9 +323,13 @@ class LeftPanel {
     let currentFile = loc.back();
     loc.pop();
     let neighbors = FILE_INDEX[loc.join('/')];
-    let idx = neighbors.indexOf(currentFile);
-    if (idx !== neighbors.length - 1) {
-      let next = loc.join('/') + '/' + neighbors[idx + 1];
+    let idx = neighbors.indexOf(currentFile) + 1;
+    while (idx < neighbors.length && !neighbors[idx].endsWith('mp4')) {
+      console.log(idx, neighbors[idx]);
+      ++idx;
+    }
+    if (idx < neighbors.length) {
+      let next = loc.join('/') + '/' + neighbors[idx];
       load_video(next);
     }
   }
